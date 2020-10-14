@@ -2,10 +2,10 @@
 
 ## INSTALL
 ### Variables
-*binaries folder* - the folder where the \<service>_bin folders will be pasted
-*output folder* - the folder where the csv data of each service will be created (service subdirectories are created to keep things organised)
-*logs folder* - the folder where the logs for each service will be created (service subdirectories are created to keep things organised)
-interval - interval between data retrieval, in milliseconds
+- *binaries folder* - the folder where the \<service>_bin folders will be pasted
+- *output folder* - the folder where the csv data of each service will be created (service subdirectories are created to keep things organised)
+- *logs folder* - the folder where the logs for each service will be created (service subdirectories are created to keep things organised)
+- *interval* - interval between data retrieval, in milliseconds
 
 
 ### install.ps1 - *installs and sets up everything*
