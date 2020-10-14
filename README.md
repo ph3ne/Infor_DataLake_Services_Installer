@@ -25,7 +25,9 @@
 ## MONITORING INSTRUCTIONS
 
 Check the logs (currently located in E:\Logs\LN)
+
 Open services.msc (or search for Services), organize by description or look directly for:
+
 - AddressesService 
 - CitiesByCountryService 
 - InventoryByWarehouseService 
