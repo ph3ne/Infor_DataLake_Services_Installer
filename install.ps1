@@ -22,8 +22,8 @@ function edit_parameters($parameters, $path, $serviceName) {
 
 function install_services($parameters, $servicesList) {
     foreach ($item in $servicesList) {
-        New-Service -Name "Infor DataLake " + $tenant + " " + $item -BinaryPathName ($parameters['binFolderPath'] + $item + '_bin\Release\DataLake' + $item + '.exe')
-        Start-Service -Name $item
+        New-Service -Name ("Infor DataLake " + $tenant + " " + $item) -BinaryPathName ($parameters['binFolderPath'] + $item + '_bin\Release\DataLake' + $item + '.exe')
+        Start-Service -Name ("Infor DataLake " + $tenant + " " + $item)
     }
 }
 
