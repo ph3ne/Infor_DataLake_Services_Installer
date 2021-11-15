@@ -11,31 +11,30 @@ function invoke_admin {
 }
 
 function edit_parameters($parameters, $path, $serviceName) {
+    $line = Get-Content $path | Select-String outputfile | Select-Object -ExpandProperty Line
     $text = Get-Content $path
-    $text = $text[0,1,2]
-    Set-Content -Path $path -Value $text
-    Add-Content $path ("outputfile|" + $parameters['outputFolderPath'] + $serviceName)
-    Add-Content $path ("logDirectory|" + $parameters['logsFolderPath'])
-    Add-Content $path ("interval|" + $parameters['interval'])
+    (Get-Content $path) | Foreach-Object {$_ -replace '^outputfile.*$', ("outputfile|" + $parameters['outputFolderPath'] + $serviceName)} | Set-Content $path
+    (Get-Content $path) | Foreach-Object {$_ -replace '^logDirectory.*$', ("logDirectory|" + $parameters['logsFolderPath'])} | Set-Content $path
+    (Get-Content $path) | Foreach-Object {$_ -replace '^interval.*$', ("interval|" + $parameters['interval'])} | Set-Content $path
+    (Get-Content $path) | Foreach-Object {$_ -replace '^ionapiFileName.*$', ("ionapiFileName|" + $parameters['apiTokenFilePath'])} | Set-Content $path
     return 0
 }
 
 function install_services($parameters, $servicesList) {
     foreach ($item in $servicesList) {
-        New-Service -Name $item -BinaryPathName ($parameters['binFolderPath'] + $item + '_bin\Release\DataLake' + $item + '.exe')
+        New-Service -Name "Infor DataLake "$tenant" "$item -BinaryPathName ($parameters['binFolderPath'] + $item + '_bin\Release\DataLake' + $item + '.exe')
         Start-Service -Name $item
     }
 }
 
-function structure_folders($parameters, $foldersList, $servicesList) {
+function structure_folders($parameters, $servicesList) {
     if (!$parameters['binFolderPath'].EndsWith('\')) { $parameters['binFolderPath']= $parameters['binFolderPath'] + '\' }
     if (!$parameters['outputFolderPath'].EndsWith('\')) { $parameters['outputFolderPath']= $parameters['outputFolderPath'] + '\' }
     if (!$parameters['logsFolderPath'].EndsWith('\')) { $parameters['logsFolderPath']= $parameters['logsFolderPath'] + '\' }
-    foreach ($item in $foldersList)
+    foreach ($item in $servicesList)
     {
         New-Item -Force -Path ($parameters['outputFolderPath'] + $item) -Type Directory
         New-Item -Force -Path ($parameters['logsFolderPath'] + $item) -Type Directory
-        Copy-Item -Path ($parameters['currentLocation'] + '\' + $item + '_bin\') ($parameters['binFolderPath'] + $item + '_bin\') -Recurse
         Copy-Item -Path ($parameters['binFolderPath'] + $item + '_bin\Debug\*') ($parameters['binFolderPath'] + $item + '_bin\Release') -Recurse
         edit_parameters $parameters ($parameters['binFolderPath'] + $item + '_bin\Release\Parameters.txt') $item
     }
@@ -43,36 +42,37 @@ function structure_folders($parameters, $foldersList, $servicesList) {
     return 0
 }
 
-function confirmation($parameters, $foldersList, $servicesList) {
+function confirmation($parameters, $servicesList) {
     Write-Host ""
-    Write-Host "binFolderPath="$parameters['binFolderPath']", outputFolderPath="$parameters['outputFolderPath']", logsFolderPath="$parameters['logsFolderPath']", interval="$parameters['interval']
+    Write-Host "binFolderPath="$parameters['binFolderPath']", outputFolderPath="$parameters['outputFolderPath']", logsFolderPath="$parameters['logsFolderPath']", interval="$parameters['interval']", apiTokenFilePath="$parameters['apiTokenFilePath']", tenant="$parameters['tenant']
     $answer = Read-Host "Are these informations correct? (y/n)"
     if ($answer -eq 'y') {
-        structure_folders $parameters $foldersList $servicesList
+        structure_folders $parameters $servicesList
         return 0
     } elseif ($answer -eq 'n') {
         Write-Host ""
         set_variables
         return 1
     } else {
-        confirmation $parameters $foldersList $servicesList
+        confirmation $parameters $servicesList
     }
 }
 
 function set_variables {
     $parameters = @{}
-    $binFolderPath = Read-Host -Prompt "Input the binaries' folder's absolute path (eg: C:\Services\LN\)"
-    $outputFolderPath = Read-Host -Prompt "Input the outputs folder's absolute path (eg: D:\data\LN\)"
-    $logsFolderPath = Read-Host -Prompt "Input the logs folder's absolute path (eg: E:\Services\Log\)"
+    $binFolderPath = Read-Host -Prompt "Input the binaries folder's absolute path (eg: C:\Services\LN\TRN\)"
+    $outputFolderPath = Read-Host -Prompt "Input the outputs folder's absolute path (eg: D:\data\LN\TRN\)"
+    $logsFolderPath = Read-Host -Prompt "Input the logs folder's absolute path (eg: E:\Services\Log\TRN\)"
     $interval = Read-Host -Prompt "Input the interval time at which the service executes (in milliseconds)"
-    $currentLocation = Get-Location
-    $currentLocation = $currentLocation.path
+    $tenant = Read-Host -Prompt "Input the tenant on which the service will run (eg: TRN)"
+    $apiTokenFilePath = Read-Host -Prompt "Input the path of the API Token file according to the tenant it will run on (eg: D:\api_tokens\FOCAL_TRN.ionapi)"
     $parameters.add('binFolderPath', $binFolderPath)
     $parameters.add('outputFolderPath', $outputFolderPath)
     $parameters.add('logsFolderPath', $logsFolderPath)
     $parameters.add('interval', $interval)
-    $parameters.add('currentLocation', $currentLocation)
-    $foldersList = @(
+    $parameters.add('tenant', $tenant)
+    $parameters.add('apiTokenFilePath', $apiTokenFilePath)
+    $servicesList = @(
         'Addresses'
         'CitiesByCountry'
         'InventoryByWarehouse'
@@ -88,23 +88,7 @@ function set_variables {
         'SalesOrderLines'
         'Units'
     )
-    $servicesList = @(
-        'AddressesService'
-        'CitiesByCountryService'
-        'InventoryByWarehouseService'
-        'FocalItemsService'
-        'ItemsBySiteService'
-        'ItemWarehouseDataService'
-        'JobShopBOMService'
-        'JobShopOperationsService'
-        'ProductionOrdersService'
-        'ProductLinesService'
-        'ProductTypesService'
-        'PurchaseOrderLinesService'
-        'SalesOrderLinesService'
-        'UnitsService'
-    )
-    confirmation $parameters $foldersList $servicesList
+    confirmation $parameters $servicesList
     return 0
 }
 
